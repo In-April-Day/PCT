@@ -1,62 +1,71 @@
-// 引脚定义（按你硬件修改）
-#define LED_PIN     2
-#define BUTTON_PIN  3
-#define RELAY_PIN   4
+#define KEY1  20
+#define KEY2  21
+#define LIGHT 6
+#define FAN   7
+#define LED   1
 
-// LED 定时（1秒闪烁）
-unsigned long ledPrev = 0;
-const long ledInterval = 1000;
-bool ledState = LOW;
+bool powerOn = false;
+bool isLight = true;
 
-// 继电器定时（2秒切换）
-unsigned long relayPrev = 0;
-const long relayInterval = 2000;
-bool relayState = LOW;
+// KEY1 state
+int idle1;
+int st1, lr1;
+unsigned long tc1;
+bool ready1;
 
-// 按键消抖
-unsigned long btnPrev = 0;
-const long btnDebounce = 50;
-bool lastBtnState = HIGH;
+// KEY2 state
+int idle2;
+int st2, lr2;
+unsigned long tc2;
+bool ready2;
+
+bool isPress(int pin, int &idle, int &st, int &lr, unsigned long &tc, bool &ready) {
+  int r = digitalRead(pin);
+  if (!ready) {
+    idle = r; st = r; lr = r; ready = true;
+    return false;
+  }
+  if (r != lr) { lr = r; tc = millis(); }
+  if (millis() - tc >= 50 && lr != st) {
+    if (st == idle && lr != idle) {
+      st = lr;
+      return true;
+    }
+    st = lr;
+  }
+  return false;
+}
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(RELAY_PIN, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT_PULLUP); // 上拉输入
-  digitalWrite(LED_PIN, ledState);
-  digitalWrite(RELAY_PIN, relayState);
-  Serial.begin(115200);
+  pinMode(LIGHT, OUTPUT);
+  pinMode(FAN, OUTPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(KEY1, INPUT);
+  pinMode(KEY2, INPUT);
+  digitalWrite(LIGHT, LOW);
+  digitalWrite(FAN, LOW);
+  digitalWrite(LED, LOW);
 }
 
 void loop() {
-  unsigned long now = millis();
+  // LED = system power status (ON = powered, OFF = off)
+  digitalWrite(LED, powerOn ? HIGH : LOW);
 
-  // 1. LED 非阻塞闪烁
-  if (now - ledPrev >= ledInterval) {
-    ledPrev = now;
-    ledState = !ledState;
-    digitalWrite(LED_PIN, ledState);
-    Serial.print("LED: "); Serial.println(ledState ? "ON" : "OFF");
-  }
-
-  // 2. 继电器非阻塞定时开关
-  if (now - relayPrev >= relayInterval) {
-    relayPrev = now;
-    relayState = !relayState;
-    digitalWrite(RELAY_PIN, relayState);
-    Serial.print("RELAY: "); Serial.println(relayState ? "ON" : "OFF");
-  }
-
-  // 3. 按键检测（带消抖，不阻塞）
-  bool btnNow = digitalRead(BUTTON_PIN);
-  if (btnNow != lastBtnState) {
-    btnPrev = now;
-  }
-  if ((now - btnPrev) > btnDebounce) {
-    if (btnNow == LOW) { // 按下
-      Serial.println("BUTTON PRESSED");
-      // 可在这里加：翻转LED或继电器等
-      // ledState = !ledState; digitalWrite(LED_PIN, ledState);
+  if (isPress(KEY1, idle1, st1, lr1, tc1, ready1)) {
+    powerOn = !powerOn;
+    if (powerOn) {
+      isLight = true;
+      digitalWrite(LIGHT, HIGH);
+      digitalWrite(FAN, LOW);
+    } else {
+      digitalWrite(LIGHT, LOW);
+      digitalWrite(FAN, LOW);
     }
   }
-  lastBtnState = btnNow;
+
+  if (isPress(KEY2, idle2, st2, lr2, tc2, ready2) && powerOn) {
+    isLight = !isLight;
+    digitalWrite(LIGHT, isLight ? HIGH : LOW);
+    digitalWrite(FAN, isLight ? LOW : HIGH);
+  }
 }
