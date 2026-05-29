@@ -3,8 +3,10 @@
 
 #include "Arduino.h"
 
-#define LED_PIN 8
+#define LED_PIN 6
+
 #define LED(x) digitalWrite(LED_PIN, x)
+#define LED_TOGGLE() digitalWrite(LED_PIN, !digitalRead(LED_PIN))
 
 void led_init(void);
 

@@ -3,9 +3,9 @@
 
 #include "Arduino.h"
 
-#define RELAY_PIN 2
-#define RELAY(x) digitalWrite(RELAY_PIN, x)
+#define RELAY_PIN 7
 
 void relay_init(void);
+void relay_control(uint8_t state);
 
 #endif

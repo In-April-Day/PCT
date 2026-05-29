@@ -2,5 +2,6 @@
 
 void key_init(void)
 {
-    pinMode(KEY_PIN, INPUT_PULLUP);
+  pinMode(KEY1_PIN, INPUT);
+  pinMode(KEY2_PIN, INPUT);
 }
